@@ -201,13 +201,13 @@ void syscallFork(struct StackFrame *sf){
 			*((uint8_t *)(&pcb[i]) + j) = *((uint8_t *)(&pcb[current]) + j);
 		}
 
+		pcb[i].stackTop = (uint32_t)&(pcb[i].regs);
+		pcb[i].prevStackTop = (uint32_t)&(pcb[i].stackTop);
 		pcb[i].state = STATE_RUNNABLE;
 		pcb[i].timeCount = 0;
 		pcb[i].sleepTime = 0;
 		pcb[i].pid = i;
 
-		pcb[i].stackTop = (uint32_t)&(pcb[i].regs);
-		pcb[i].prevStackTop = (uint32_t)&(pcb[i].stackTop);
 
 		pcb[i].regs.ss = USEL(2+2*i);
 		pcb[i].regs.cs = USEL(1+2*i);
