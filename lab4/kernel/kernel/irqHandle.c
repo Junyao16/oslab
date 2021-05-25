@@ -398,26 +398,95 @@ void syscallSem(struct StackFrame *sf) {
 }
 
 void syscallSemInit(struct StackFrame *sf) {
-	// TODO: complete `SemInit`
-	
+	// complete `SemInit`
+	int i = 0;
+	while(i < MAX_SEM_NUM){
+		if(sem[i].state != 1) break;
+		i++;
+	}
+	if(i == MAX_SEM_NUM){
+		pcb[current].regs.eax = -1;
+		return;
+	}
+	else{
+		sem[i].state = 1; // 0: not in use; 1: in use;
+        sem[i].value = (int)sf->edx; // >=0: no process blocked; -1: 1 process blocked; -2: 2 process blocked;...
+        sem[i].pcb.next = &(sem[i].pcb);
+        sem[i].pcb.prev = &(sem[i].pcb);
+		pcb[current].regs.eax = i;
+	}
 	return;
 }
 
 void syscallSemWait(struct StackFrame *sf) {
-	// TODO: complete `SemWait` and note that you need to consider some special situations
-}
-
-void syscallSemPost(struct StackFrame *sf) {
+	//  complete `SemWait` and note that you need to consider some special situations
 	int i = (int)sf->edx;
-	//TODO:ProcessTable *pt = NULL;
 	if (i < 0 || i >= MAX_SEM_NUM) {
 		pcb[current].regs.eax = -1;
 		return;
 	}
-	// TODO: complete other situations
+	else{
+		if(sem[i].state == 1){
+			sem[i].value--;
+
+			pcb[current].regs.eax = 0;
+			if(sem[i].value < 0){
+				pcb[current].blocked.next = sem[i].pcb.next;
+				pcb[current].blocked.prev = &(sem[i].pcb);
+				sem[i].pcb.next = &(pcb[current].blocked);
+				(pcb[current].blocked.next)->prev = &(pcb[current].blocked);
+
+				pcb[current].state = STATE_BLOCKED;
+				pcb[current].sleepTime = -1;
+
+				asm volatile("int $0x20");
+			} 
+		}
+		else pcb[current].regs.eax = -1;
+		return;
+	}
 }
 
+void syscallSemPost(struct StackFrame *sf) {
+	int i = (int)sf->edx;
+	ProcessTable *pt = NULL;
+	if (i < 0 || i >= MAX_SEM_NUM) {
+		pcb[current].regs.eax = -1;
+		return;
+	}
+	else{
+		if(sem[i].state == 1){
+			sem[i].value++;
+			pcb[current].regs.eax = 0;
+			if(sem[i].value <= 0){
+				pt = (ProcessTable*)((uint32_t)(sem[i].pcb.prev) -
+                    (uint32_t)&(((ProcessTable*)0)->blocked));
+				sem[i].pcb.prev = (sem[i].pcb.prev)->prev;
+				(sem[i].pcb.prev)->next = &(sem[i].pcb);
+				pt->state = STATE_RUNNABLE;
+				pt->sleepTime = 0;
+			} 
+		}
+		else pcb[current].regs.eax = -1;
+	}
+	// complete other situations
+}
+
+
 void syscallSemDestroy(struct StackFrame *sf) {
-	// TODO: complete `SemDestroy`
+	// complete `SemDestroy`
+	int i = (int)sf->edx;
+	if (i < 0 || i >= MAX_SEM_NUM) {
+		pcb[current].regs.eax = -1;
+		return;
+	}
+	else{
+		if(sem[i].state == 1){
+			sem[i].state = 0;
+			pcb[current].regs.eax = 0;
+			sem[i].value = 0;
+		}
+		else pcb[current].regs.eax = -1;
+	}
 	return;
 }
