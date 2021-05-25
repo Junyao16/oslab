@@ -150,15 +150,15 @@ void keyboardHandle(struct StackFrame *sf) {
 	bufferTail=(bufferTail+1)%MAX_KEYBUFFER_SIZE;
 
 	if (dev[STD_IN].value < 0) { // with process blocked
-		// TODO: deal with blocked situation
+		// deal with blocked situation
 		dev[STD_IN].value ++;
-		pt = (ProcessTable*)((uint32_t)(dev[STD_IN].pcb.prev) - (uint32_t)&(((ProcessTable*)0)->blocked));
+		pt = (ProcessTable*)((uint32_t)(dev[STD_IN].pcb.prev) -
+                    (uint32_t)&(((ProcessTable*)0)->blocked));
+        dev[STD_IN].pcb.prev = (dev[STD_IN].pcb.prev)->prev;
+        (dev[STD_IN].pcb.prev)->next = &(dev[STD_IN].pcb);
 
 		pt->state = STATE_RUNNABLE;
 		pt->sleepTime = 0;
-
-		dev[STD_IN].pcb.prev = (dev[STD_IN].pcb.prev)->prev;
-		dev[STD_IN].pcb.prev->next = &(dev[STD_IN].pcb);
 	}
 
 	return;
@@ -254,15 +254,15 @@ void syscallRead(struct StackFrame *sf) {
 }
 
 void syscallReadStdIn(struct StackFrame *sf) {
-	// TODO: complete `stdin`
+	// complete `stdin`
 
 	if(dev[STD_IN].value == 0){
 		dev[STD_IN].value--;
 
-		dev[STD_IN].pcb.next->prev = &(pcb[current].blocked);
 		pcb[current].blocked.next = dev[STD_IN].pcb.next;
-		pcb[current].blocked.prev = &(dev[STD_IN].pcb);
-		dev[STD_IN].pcb.next = &(pcb[current].blocked);
+        pcb[current].blocked.prev = &(dev[STD_IN].pcb);
+        dev[STD_IN].pcb.next = &(pcb[current].blocked);
+        (pcb[current].blocked.next)->prev = &(pcb[current].blocked);
 
 		pcb[current].state = STATE_BLOCKED;
 		pcb[current].sleepTime = -1;
@@ -399,6 +399,7 @@ void syscallSem(struct StackFrame *sf) {
 
 void syscallSemInit(struct StackFrame *sf) {
 	// TODO: complete `SemInit`
+	
 	return;
 }
 
