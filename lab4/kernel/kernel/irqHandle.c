@@ -8,6 +8,7 @@
 #define SYS_SLEEP 4
 #define SYS_EXIT 5
 #define SYS_SEM 6
+#define SYS_PID 7
 
 #define STD_OUT 0
 #define STD_IN 1
@@ -44,6 +45,7 @@ void syscallExec(struct StackFrame *sf);
 void syscallSleep(struct StackFrame *sf);
 void syscallExit(struct StackFrame *sf);
 void syscallSem(struct StackFrame *sf);
+void syscallPid(struct StackFrame *sf);
 
 void syscallWriteStdOut(struct StackFrame *sf);
 
@@ -187,6 +189,9 @@ void syscallHandle(struct StackFrame *sf) {
 		case SYS_SEM:
 			syscallSem(sf);
 			break; // for SYS_SEM
+		case SYS_PID:
+			syscallPid(sf);
+			break; // for SYS_PID
 		default:break;
 	}
 }
@@ -488,5 +493,10 @@ void syscallSemDestroy(struct StackFrame *sf) {
 		}
 		else pcb[current].regs.eax = -1;
 	}
+	return;
+}
+
+void syscallPid(struct StackFrame *sf) {
+	pcb[current].regs.eax = current;
 	return;
 }
